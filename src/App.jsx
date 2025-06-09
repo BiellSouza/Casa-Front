@@ -21,7 +21,9 @@ export default function ProdutoManager() {
     const nome = prompt("Nome do produto:");
     const descricao = prompt("Descrição:");
     const imagem = prompt("URL da imagem:");
-    const categoria = prompt("Categoria (Alimento, Limpeza, Eletrodomésticos):");
+    const categoria = prompt(
+      "Categoria (Alimento, Limpeza, Eletrodomésticos):"
+    );
 
     if (!nome || !categoria) return;
 
@@ -47,18 +49,42 @@ export default function ProdutoManager() {
       await axios.delete(`http://localhost:3000/produtos/${produto.id}`);
       alert(
         `Produto excluído:\n\n` +
-        `ID: ${produto.id}\n` +
-        `Nome: ${produto.nome}\n` +
-        `Descrição: ${produto.descricao || "N/A"}\n` +
-        `Imagem: ${produto.imagem || "N/A"}\n` +
-        `Categoria: ${produto.categoria || "N/A"}\n` +
-        `Criado em: ${new Date(produto.criadoEm).toLocaleString()}`
+          `ID: ${produto.id}\n` +
+          `Nome: ${produto.nome}\n` +
+          `Descrição: ${produto.descricao || "N/A"}\n` +
+          `Imagem: ${produto.imagem || "N/A"}\n` +
+          `Categoria: ${produto.categoria || "N/A"}\n` +
+          `Criado em: ${new Date(produto.criadoEm).toLocaleString()}`
       );
       carregarProdutos();
     } catch (err) {
       console.error("Erro ao excluir produto", err);
     } finally {
       setExcluindoId(null);
+    }
+  };
+
+  const editarProduto = async (produto) => {
+    const nome = prompt("Novo nome do produto:", produto.nome);
+    const descricao = prompt("Nova descrição:", produto.descricao);
+    const imagem = prompt("Nova URL da imagem:", produto.imagem);
+    const categoria = prompt(
+      "Nova categoria (Alimento, Limpeza, Eletrodomésticos):",
+      produto.categoria
+    );
+
+    if (!nome || !categoria) return;
+
+    try {
+      await axios.put(`http://localhost:3000/produtos/${produto.id}`, {
+        nome,
+        descricao,
+        imagem,
+        categoria,
+      });
+      carregarProdutos();
+    } catch (err) {
+      console.error("Erro ao editar produto", err);
     }
   };
 
@@ -137,7 +163,13 @@ export default function ProdutoManager() {
                 <td className="p-2">
                   {new Date(produto.criadoEm).toLocaleDateString()}
                 </td>
-                <td className="p-2">
+                <td className="p-2 flex gap-2">
+                  <button
+                    onClick={() => editarProduto(produto)}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                  >
+                    Editar
+                  </button>
                   <button
                     onClick={() => excluirProduto(produto)}
                     disabled={excluindoId === produto.id}
