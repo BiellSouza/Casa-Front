@@ -3,14 +3,17 @@ import axios from "axios";
 
 const categorias = ["Todos", "Alimento", "Limpeza", "Eletrodomésticos"];
 
+// URL base da API (Render ou localhost)
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 export default function ProdutoManager() {
   const [produtos, setProdutos] = useState([]);
   const [filtro, setFiltro] = useState("Todos");
-  const [excluindoId, setExcluindoId] = useState(null); // 👈 novo estado
+  const [excluindoId, setExcluindoId] = useState(null);
 
   const carregarProdutos = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/produtos");
+      const res = await axios.get(`${API_URL}/produtos`);
       setProdutos(res.data);
     } catch (err) {
       console.error("Erro ao carregar produtos", err);
@@ -28,7 +31,7 @@ export default function ProdutoManager() {
     if (!nome || !categoria) return;
 
     try {
-      await axios.post("http://localhost:3000/produtos", {
+      await axios.post(`${API_URL}/produtos`, {
         nome,
         descricao,
         imagem,
@@ -46,7 +49,7 @@ export default function ProdutoManager() {
     setExcluindoId(produto.id);
 
     try {
-      await axios.delete(`http://localhost:3000/produtos/${produto.id}`);
+      await axios.delete(`${API_URL}/produtos/${produto.id}`);
       alert(
         `Produto excluído:\n\n` +
           `ID: ${produto.id}\n` +
@@ -76,7 +79,7 @@ export default function ProdutoManager() {
     if (!nome || !categoria) return;
 
     try {
-      await axios.put(`http://localhost:3000/produtos/${produto.id}`, {
+      await axios.put(`${API_URL}/produtos/${produto.id}`, {
         nome,
         descricao,
         imagem,
