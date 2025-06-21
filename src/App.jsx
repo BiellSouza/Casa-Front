@@ -25,7 +25,7 @@ export default function ProdutoManagerElegant() {
   const carregarProdutos = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://casa-back-1.onrender.com//produtos");
+      const res = await axios.get("https://casa-back-1.onrender.com//produtos");
       setProdutos(res.data);
     } catch (err) {
       console.error("Erro ao carregar produtos", err);
@@ -91,10 +91,10 @@ export default function ProdutoManagerElegant() {
 
     try {
       if (modalModo === "adicionar") {
-        await axios.post("http://casa-back-1.onrender.com//produtos", form);
+        await axios.post("https://casa-back-1.onrender.com//produtos", form);
       } else if (modalModo === "editar" && produtoAtual) {
         await axios.put(
-          `http://casa-back-1.onrender.com//produtos/${produtoAtual.id}`,
+          `https://casa-back-1.onrender.com//produtos/${produtoAtual.id}`,
           form
         );
       }
@@ -110,7 +110,7 @@ export default function ProdutoManagerElegant() {
     if (!window.confirm(`Excluir produto "${produto.nome}"?`)) return;
     try {
       await axios.delete(
-        `http://casa-back-1.onrender.com//produtos/${produto.id}`
+        `https://casa-back-1.onrender.com//produtos/${produto.id}`
       );
       alert(
         `Produto excluído:\n\n` +
