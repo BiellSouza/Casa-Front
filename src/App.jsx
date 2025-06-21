@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 
-const categorias = ["Alimento", "Limpeza", "Eletrodomésticos"];
+const categorias = ["Limpeza", "Alimento", "Eletrodomésticos"];
 
 export default function ProdutoManagerElegant() {
   const [produtos, setProdutos] = useState([]);
@@ -15,10 +15,12 @@ export default function ProdutoManagerElegant() {
     imagem: "",
     categoria: categorias[0],
   });
-
-  // NOVO: Estado para modal de visualização
+  const [filtro, setFiltro] = useState("Todos");
+  const [mostrarDropdown, setMostrarDropdown] = useState(false);
   const [modalVisualizarAberto, setModalVisualizarAberto] = useState(false);
   const [produtoVisualizar, setProdutoVisualizar] = useState(null);
+
+  const dropdownRef = useRef(null);
 
   const carregarProdutos = async () => {
     setLoading(true);
@@ -34,6 +36,18 @@ export default function ProdutoManagerElegant() {
 
   useEffect(() => {
     carregarProdutos();
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setMostrarDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const abrirModalAdicionar = () => {
@@ -96,6 +110,14 @@ export default function ProdutoManagerElegant() {
     if (!window.confirm(`Excluir produto "${produto.nome}"?`)) return;
     try {
       await axios.delete(`http://localhost:3000/produtos/${produto.id}`);
+      alert(
+        `Produto excluído:\n\n` +
+          `ID: ${produto.id}\n` +
+          `Nome: ${produto.nome}\n` +
+          `Descrição: ${produto.descricao || "N/A"}\n` +
+          `Categoria: ${produto.categoria || "N/A"}\n` +
+          `Criado em: ${new Date(produto.criadoEm).toLocaleString()}`
+      );
       carregarProdutos();
     } catch (err) {
       alert("Erro ao excluir produto");
@@ -103,41 +125,104 @@ export default function ProdutoManagerElegant() {
     }
   };
 
-  // NOVO: abrir modal visualizar
+  // Abrir modal visualizar produto
   const abrirModalVisualizar = (produto) => {
     setProdutoVisualizar(produto);
     setModalVisualizarAberto(true);
   };
+
   const fecharModalVisualizar = () => {
     setModalVisualizarAberto(false);
     setProdutoVisualizar(null);
   };
 
+  const produtosFiltrados =
+    filtro === "Todos"
+      ? produtos
+      : produtos.filter(
+          (p) =>
+            p.categoria && p.categoria.toLowerCase() === filtro.toLowerCase()
+        );
+
   return (
-    <div className="bg-black min-h-screen text-black">
-      <header className="bg-gradient-to-r from-red-800 via-red-900 to-black text-white p-6 sticky top-0 z-50 shadow-md">
-        <h1 className="text-3xl font-extrabold tracking-wide">
-          Gerenciador de Produtos
+    <div className="bg-black min-h-screen">
+      <header className="bg-gradient-to-r from-red-800 via-red-900 to-red-800 text-white p-6 sticky top-0 z-50 shadow-md flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-3xl font-extrabold tracking-wide flex-grow">
+          Produtos para nossa casa
         </h1>
-        <button
-          onClick={abrirModalAdicionar}
-          className="mt-4 px-6 py-2 bg-black hover:bg-red-700 rounded-lg shadow-lg font-semibold transition"
-        >
-          + Novo Produto
-        </button>
+
+        <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={abrirModalAdicionar}
+            className="px-6 py-2 bg-black hover:bg-gray-700 rounded-lg shadow-lg font-semibold transition"
+          >
+            + Novo Produto
+          </button>
+
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setMostrarDropdown((v) => !v)}
+              className="px-6 py-2 bg-black hover:bg-gray-700 rounded-lg shadow font-semibold transition flex items-center gap-1"
+            >
+              Filtrar: {filtro}
+              <svg
+                className={`w-4 h-4 transition-transform ${
+                  mostrarDropdown ? "rotate-180" : "rotate-0"
+                }`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 9l-7 7-7-7"
+                ></path>
+              </svg>
+            </button>
+
+            {mostrarDropdown && (
+              <ul className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg text-black font-semibold z-50">
+                <li
+                  className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                  onClick={() => {
+                    setFiltro("Todos");
+                    setMostrarDropdown(false);
+                  }}
+                >
+                  Todos
+                </li>
+                {categorias.map((cat) => (
+                  <li
+                    key={cat}
+                    className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                    onClick={() => {
+                      setFiltro(cat);
+                      setMostrarDropdown(false);
+                    }}
+                  >
+                    {cat}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </header>
 
-      <main className="p-6 max-w-7xl mx-auto grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 ">
+      <main className="p-6 max-w-7xl mx-auto grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {loading ? (
           <div className="col-span-full text-center text-gray-600">
             Carregando produtos...
           </div>
-        ) : produtos.length === 0 ? (
+        ) : produtosFiltrados.length === 0 ? (
           <div className="col-span-full text-center text-gray-500">
             Nenhum produto encontrado.
           </div>
         ) : (
-          produtos.map((produto) => (
+          produtosFiltrados.map((produto) => (
             <div
               key={produto.id}
               className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col"
@@ -155,10 +240,13 @@ export default function ProdutoManagerElegant() {
                 )}
               </div>
               <div className="p-4 flex flex-col flex-grow">
-                <h2 className="text-xl font-bold mb-1 truncate">
+                <h2
+                  className="text-xl font-bold mb-1 truncate"
+                  title={produto.nome}
+                >
                   {produto.nome}
                 </h2>
-                <p className="text-gray-600 flex-grow mb-2">
+                <p className="text-gray-600 flex-grow mb-2 break-words">
                   {produto.descricao || "Sem descrição"}
                 </p>
                 <p className="text-sm font-semibold uppercase text-indigo-600 mb-2">
@@ -180,10 +268,9 @@ export default function ProdutoManagerElegant() {
                   >
                     Excluir
                   </button>
-                  {/* NOVO: botão visualizar */}
                   <button
                     onClick={() => abrirModalVisualizar(produto)}
-                    className="flex-grow bg-green-600 hover:bg-green-700 text-white rounded-md py-2 font-semibold transition"
+                    className="flex-grow bg-gray-700 hover:bg-gray-800 text-white rounded-md py-2 font-semibold transition"
                   >
                     Visualizar
                   </button>
@@ -194,7 +281,7 @@ export default function ProdutoManagerElegant() {
         )}
       </main>
 
-      {/* Modal adicionar/editar */}
+      {/* Modal Adicionar/Editar */}
       {modalAberto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6 relative shadow-xl">
@@ -282,44 +369,48 @@ export default function ProdutoManagerElegant() {
         </div>
       )}
 
-      {/* Modal visualizar produto */}
+      {/* Modal Visualizar Produto */}
       {modalVisualizarAberto && produtoVisualizar && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-lg w-full p-6 relative shadow-2xl flex flex-col md:flex-row gap-4 overflow-auto max-h-[90vh]">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 overflow-auto">
+          <div className="bg-white rounded-lg max-w-lg w-full p-6 relative shadow-xl max-h-full overflow-auto">
+            <h2 className="text-2xl font-bold mb-4">
+              {produtoVisualizar.nome}
+            </h2>
+
             {produtoVisualizar.imagem ? (
               <img
                 src={produtoVisualizar.imagem}
                 alt={produtoVisualizar.nome}
-                className="max-w-[50%] max-h-96 object-contain rounded-lg self-center md:self-start flex-shrink-0"
-                loading="lazy"
+                className="w-full max-h-96 object-contain mb-4 rounded"
               />
             ) : (
-              <div className="text-gray-500 italic text-center">
+              <div className="text-gray-400 text-center mb-4 italic">
                 Sem imagem disponível
               </div>
             )}
-            <div className="flex flex-col flex-grow break-words">
-              <h2 className="text-3xl font-bold mb-4 break-words">
-                {produtoVisualizar.nome}
-              </h2>
-              <p className="text-gray-700 mb-4 break-words whitespace-pre-wrap">
-                {produtoVisualizar.descricao || "Sem descrição disponível."}
-              </p>
-              <p className="text-indigo-600 uppercase font-semibold mb-2 break-words">
-                Categoria: {produtoVisualizar.categoria || "Sem categoria"}
-              </p>
-              <p className="text-sm text-gray-400 break-words">
-                Criado em:{" "}
-                {new Date(produtoVisualizar.criadoEm).toLocaleDateString()}
-              </p>
 
-              <button
-                onClick={fecharModalVisualizar}
-                className=" self-start mt-4 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition"
-              >
-                Fechar
-              </button>
-            </div>
+            <p className="mb-2">
+              <span className="font-semibold">Descrição: </span>
+              {produtoVisualizar.descricao || "Sem descrição"}
+            </p>
+
+            <p className="mb-2">
+              <span className="font-semibold">Categoria: </span>
+              {produtoVisualizar.categoria || "Sem categoria"}
+            </p>
+
+            <p className="mb-2 text-sm text-gray-500">
+              Criado em:{" "}
+              {new Date(produtoVisualizar.criadoEm).toLocaleDateString()}
+            </p>
+
+            <button
+              onClick={fecharModalVisualizar}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-3xl font-bold"
+              aria-label="Fechar visualização"
+            >
+              &times;
+            </button>
           </div>
         </div>
       )}
