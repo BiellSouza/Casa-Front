@@ -11,7 +11,6 @@ const categorias = [
 
 export default function ProdutoManagerElegant() {
   const [produtos, setProdutos] = useState([]);
-  const [produtosExcluidos, setProdutosExcluidos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalAberto, setModalAberto] = useState(false);
   const [modalModo, setModalModo] = useState("adicionar");
@@ -26,17 +25,13 @@ export default function ProdutoManagerElegant() {
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
   const [modalVisualizarAberto, setModalVisualizarAberto] = useState(false);
   const [produtoVisualizar, setProdutoVisualizar] = useState(null);
-  const [mostrarLixeira, setMostrarLixeira] = useState(false);
 
   const dropdownRef = useRef(null);
 
-  const baseURL = "https://casa-back-1.onrender.com";
-
-  // Carregar produtos ativos
   const carregarProdutos = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${baseURL}/produtos`);
+      const res = await axios.get("https://casa-back-1.onrender.com/produtos");
       setProdutos(res.data);
     } catch (err) {
       console.error("Erro ao carregar produtos", err);
@@ -45,22 +40,8 @@ export default function ProdutoManagerElegant() {
     }
   };
 
-  // Carregar produtos excluídos (lixeira)
-  const carregarProdutosExcluidos = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(`${baseURL}/produtos/lixeira`);
-      setProdutosExcluidos(res.data);
-    } catch (err) {
-      console.error("Erro ao carregar produtos excluídos", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     carregarProdutos();
-    carregarProdutosExcluidos();
   }, []);
 
   useEffect(() => {
@@ -116,44 +97,38 @@ export default function ProdutoManagerElegant() {
 
     try {
       if (modalModo === "adicionar") {
-        await axios.post(`${baseURL}/produtos`, form);
+        await axios.post("https://casa-back-1.onrender.com/produtos", form);
       } else if (modalModo === "editar" && produtoAtual) {
-        await axios.put(`${baseURL}/produtos/${produtoAtual.id}`, form);
+        await axios.put(
+          `https://casa-back-1.onrender.com/produtos/${produtoAtual.id}`,
+          form
+        );
       }
       fecharModal();
       carregarProdutos();
-      carregarProdutosExcluidos();
     } catch (err) {
       alert("Erro ao salvar produto");
       console.error(err);
     }
   };
 
-  // Exclusão lógica
   const excluirProduto = async (produto) => {
     if (!window.confirm(`Excluir produto "${produto.nome}"?`)) return;
     try {
-      const res = await axios.delete(`${baseURL}/produtos/${produto.id}`);
+      await axios.delete(
+        `https://casa-back-1.onrender.com/produtos/${produto.id}`
+      );
       alert(
-        `Produto excluído:\n\n${JSON.stringify(res.data.produto, null, 2)}`
+        `Produto excluído:\n\n` +
+          `ID: ${produto.id}\n` +
+          `Nome: ${produto.nome}\n` +
+          `Descrição: ${produto.descricao || "N/A"}\n` +
+          `Categoria: ${produto.categoria || "N/A"}\n` +
+          `Criado em: ${new Date(produto.criadoEm).toLocaleString()}`
       );
       carregarProdutos();
-      carregarProdutosExcluidos();
     } catch (err) {
       alert("Erro ao excluir produto");
-      console.error(err);
-    }
-  };
-
-  // Restaurar produto da lixeira
-  const restaurarProduto = async (produto) => {
-    if (!window.confirm(`Restaurar produto "${produto.nome}"?`)) return;
-    try {
-      await axios.put(`${baseURL}/produtos/${produto.id}/restaurar`);
-      carregarProdutos();
-      carregarProdutosExcluidos();
-    } catch (err) {
-      alert("Erro ao restaurar produto");
       console.error(err);
     }
   };
@@ -177,13 +152,13 @@ export default function ProdutoManagerElegant() {
         );
 
   return (
-    <div className="bg-black min-h-screen text-white">
-      <header className="bg-gradient-to-r from-red-800 via-red-900 to-red-800 p-6 sticky top-0 z-50 shadow-md flex flex-wrap items-center justify-between gap-4">
+    <div className="bg-black min-h-screen">
+      <header className="bg-gradient-to-r from-red-800 via-red-900 to-red-800 text-white p-6 sticky top-0 z-50 shadow-md flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-extrabold tracking-wide flex-grow">
           Produtos para nossa casa
         </h1>
 
-        <div className="flex gap-3 flex-wrap items-center">
+        <div className="flex gap-3 flex-wrap">
           <button
             onClick={abrirModalAdicionar}
             className="px-6 py-2 bg-black hover:bg-gray-700 rounded-lg shadow-lg font-semibold transition"
@@ -191,65 +166,54 @@ export default function ProdutoManagerElegant() {
             + Novo Produto
           </button>
 
-          <button
-            onClick={() => setMostrarLixeira(!mostrarLixeira)}
-            className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg shadow font-semibold transition"
-          >
-            {mostrarLixeira ? "Voltar aos Produtos" : "Ver Lixeira"}
-          </button>
-
           <div className="relative" ref={dropdownRef}>
-            {!mostrarLixeira && (
-              <>
-                <button
-                  onClick={() => setMostrarDropdown((v) => !v)}
-                  className="px-6 py-2 bg-black hover:bg-gray-700 rounded-lg shadow font-semibold transition flex items-center gap-1"
-                >
-                  Filtrar: {filtro}
-                  <svg
-                    className={`w-4 h-4 transition-transform ${
-                      mostrarDropdown ? "rotate-180" : "rotate-0"
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19 9l-7 7-7-7"
-                    ></path>
-                  </svg>
-                </button>
+            <button
+              onClick={() => setMostrarDropdown((v) => !v)}
+              className="px-6 py-2 bg-black hover:bg-gray-700 rounded-lg shadow font-semibold transition flex items-center gap-1"
+            >
+              Filtrar: {filtro}
+              <svg
+                className={`w-4 h-4 transition-transform ${
+                  mostrarDropdown ? "rotate-180" : "rotate-0"
+                }`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 9l-7 7-7-7"
+                ></path>
+              </svg>
+            </button>
 
-                {mostrarDropdown && (
-                  <ul className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg text-black font-semibold z-50">
-                    <li
-                      className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
-                      onClick={() => {
-                        setFiltro("Todos");
-                        setMostrarDropdown(false);
-                      }}
-                    >
-                      Todos
-                    </li>
-                    {categorias.map((cat) => (
-                      <li
-                        key={cat}
-                        className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
-                        onClick={() => {
-                          setFiltro(cat);
-                          setMostrarDropdown(false);
-                        }}
-                      >
-                        {cat}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
+            {mostrarDropdown && (
+              <ul className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg text-black font-semibold z-50">
+                <li
+                  className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                  onClick={() => {
+                    setFiltro("Todos");
+                    setMostrarDropdown(false);
+                  }}
+                >
+                  Todos
+                </li>
+                {categorias.map((cat) => (
+                  <li
+                    key={cat}
+                    className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                    onClick={() => {
+                      setFiltro(cat);
+                      setMostrarDropdown(false);
+                    }}
+                  >
+                    {cat}
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>
@@ -257,68 +221,9 @@ export default function ProdutoManagerElegant() {
 
       <main className="p-6 max-w-7xl mx-auto grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {loading ? (
-          <div className="col-span-full text-center text-gray-400">
+          <div className="col-span-full text-center text-gray-600">
             Carregando produtos...
           </div>
-        ) : mostrarLixeira ? (
-          produtosExcluidos.length === 0 ? (
-            <div className="col-span-full text-center text-gray-400">
-              Nenhum produto na lixeira.
-            </div>
-          ) : (
-            produtosExcluidos.map((produto) => (
-              <div
-                key={produto.id}
-                className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col text-black"
-              >
-                <div className="h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
-                  {produto.imagem ? (
-                    <img
-                      src={produto.imagem}
-                      alt={produto.nome}
-                      className="object-cover w-full h-full transition-transform duration-300 hover:scale-105"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="text-gray-400 text-lg italic">
-                      Sem imagem
-                    </div>
-                  )}
-                </div>
-                <div className="p-4 flex flex-col flex-grow">
-                  <h2
-                    className="text-xl font-bold mb-1 truncate"
-                    title={produto.nome}
-                  >
-                    {produto.nome}
-                  </h2>
-                  <p className="text-gray-600 flex-grow mb-2 break-words">
-                    {produto.descricao || "Sem descrição"}
-                  </p>
-                  <p className="text-sm font-semibold uppercase text-indigo-600 mb-2">
-                    {produto.categoria || "Sem categoria"}
-                  </p>
-                  <p className="text-xs text-gray-400 mb-4">
-                    Criado em: {new Date(produto.criadoEm).toLocaleDateString()}
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => restaurarProduto(produto)}
-                      className="flex-grow bg-green-600 hover:bg-green-700 text-white rounded-md py-2 font-semibold transition"
-                    >
-                      Restaurar
-                    </button>
-                    <button
-                      onClick={() => abrirModalVisualizar(produto)}
-                      className="flex-grow bg-gray-700 hover:bg-gray-800 text-white rounded-md py-2 font-semibold transition"
-                    >
-                      Visualizar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )
         ) : produtosFiltrados.length === 0 ? (
           <div className="col-span-full text-center text-gray-500">
             Nenhum produto encontrado.
@@ -327,7 +232,7 @@ export default function ProdutoManagerElegant() {
           produtosFiltrados.map((produto) => (
             <div
               key={produto.id}
-              className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col text-black"
+              className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col"
             >
               <div className="h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
                 {produto.imagem ? (
@@ -386,7 +291,7 @@ export default function ProdutoManagerElegant() {
       {/* Modal Adicionar/Editar */}
       {modalAberto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 relative shadow-xl text-black">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 relative shadow-xl">
             <h2 className="text-2xl font-bold mb-4">
               {modalModo === "adicionar"
                 ? "Adicionar Produto"
@@ -474,7 +379,7 @@ export default function ProdutoManagerElegant() {
       {/* Modal Visualizar Produto */}
       {modalVisualizarAberto && produtoVisualizar && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 overflow-auto">
-          <div className="bg-white rounded-lg max-w-lg w-full p-6 relative shadow-xl max-h-full overflow-auto text-black">
+          <div className="bg-white rounded-lg max-w-lg w-full p-6 relative shadow-xl max-h-full overflow-auto">
             <h2 className="text-2xl font-bold mb-4">
               {produtoVisualizar.nome}
             </h2>
