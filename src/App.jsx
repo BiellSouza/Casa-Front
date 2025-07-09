@@ -1,13 +1,19 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 
-const categorias = ["Limpeza", "Alimento", "Eletrodomésticos"];
+const categorias = [
+  "Limpeza",
+  "Alimento",
+  "Eletrodomésticos",
+  "Rosana",
+  "Gabriel",
+];
 
 export default function ProdutoManagerElegant() {
   const [produtos, setProdutos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalAberto, setModalAberto] = useState(false);
-  const [modalModo, setModalModo] = useState("adicionar"); // 'adicionar' ou 'editar'
+  const [modalModo, setModalModo] = useState("adicionar");
   const [produtoAtual, setProdutoAtual] = useState(null);
   const [form, setForm] = useState({
     nome: "",
@@ -127,7 +133,6 @@ export default function ProdutoManagerElegant() {
     }
   };
 
-  // Abrir modal visualizar produto
   const abrirModalVisualizar = (produto) => {
     setProdutoVisualizar(produto);
     setModalVisualizarAberto(true);
