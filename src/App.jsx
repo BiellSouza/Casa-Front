@@ -30,7 +30,7 @@ export default function ProdutoManagerElegant() {
 
   const dropdownRef = useRef(null);
 
-  const baseURL = "https://meu-backend.onrender.com";
+  const baseURL = "https://casa-back-1.onrender.com";
 
   // Carregar produtos ativos
   const carregarProdutos = async () => {
