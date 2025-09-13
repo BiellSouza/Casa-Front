@@ -8,6 +8,7 @@ const categorias = [
   "Eletrodomésticos",
   "Rosana",
   "Gabriel",
+  "Ave",
 ];
 
 export default function App() {
