@@ -131,7 +131,7 @@ export default function App() {
       await axios.delete(
         `https://casa-back-1.onrender.com/produtos/${produto.id}`
       );
-      alert(`Produto excluído: ${produto.nome}`);
+      alert(`Produto excluído: ${produto.nome}.`);
       carregarProdutos();
     } catch (err) {
       alert("Erro ao excluir produto");
@@ -165,7 +165,7 @@ export default function App() {
       {/* ---------------- Navbar ---------------- */}
       <div className="w-full h-16 bg-secundary justify-between flex items-center px-4 rounded-[6px] mb-[36px] max-w-[1215px] m-auto bg-white/50">
         {/* Logo */}
-        <h1 className="text-[26px] text-primary">Nosso Sistema</h1>
+        <h1 className="text-[26px] text-white">Nosso Sistema</h1>
 
         {/* Desktop */}
         <div className="hidden lg:flex gap-2 items-center">
@@ -200,7 +200,7 @@ export default function App() {
             <div className="flex gap-6">
               <button
                 onClick={abrirModalAdicionar}
-                className="bg-primary p-1 px-3 text-white rounded-full flex w-[160px] justify-evenly items-center"
+                className="bg-primary p-2 px-3 border-2 border-white text-white rounded-full flex w-[160px] justify-evenly items-center"
               >
                 Novo Produto <Plus size={20} />
               </button>
@@ -208,7 +208,7 @@ export default function App() {
               <div className="relative w-[175px]">
                 <button
                   onClick={() => setMostrarDropdown((v) => !v)}
-                  className="bg-primary p-1 px-3 text-white rounded-full flex justify-between items-center w-full"
+                  className="bg-primary p-2 px-3 border-2 border-white text-white rounded-full flex justify-between items-center w-full"
                 >
                   Filtrar Categoria <ChevronDown size={20} />
                 </button>
@@ -244,10 +244,7 @@ export default function App() {
         </div>
 
         {/* Mobile Menu */}
-        <button
-          onClick={open}
-          className="lg:hidden p-2 rounded-md text-gray-700 hover:bg-gray-200"
-        >
+        <button onClick={open} className="lg:hidden p-2 rounded-md text-white ">
           <Menu size={28} />
         </button>
 
@@ -311,9 +308,32 @@ export default function App() {
                   Novo Produto <Plus size={20} />
                 </button>
 
-                <button className="bg-primary p-2 px-3 text-white rounded-full flex justify-between items-center">
+                <button
+                  onClick={() => setMostrarDropdown((v) => !v)}
+                  className="bg-primary p-2 px-3 border-2 border-white text-white rounded-full flex justify-between items-center w-full"
+                >
                   Filtrar Categoria <ChevronDown size={20} />
                 </button>
+
+                {mostrarDropdown && (
+                  <ul className="flex flex-col mt-2 w-full bg-white rounded-md shadow-lg text-black font-semibold z-50">
+                    <li
+                      className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                      onClick={() => setFiltro("Todos")}
+                    >
+                      Todos
+                    </li>
+                    {categorias.map((cat) => (
+                      <li
+                        key={cat}
+                        className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                        onClick={() => setFiltro(cat)}
+                      >
+                        {cat}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
               <p className="text-black/30 mt-4 text-center">
@@ -328,7 +348,7 @@ export default function App() {
       </div>
 
       {/* ---------------- Main Grid ---------------- */}
-      <main className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 max-w-[1215px] m-auto">
+      <main className="flex gap-4 flex-wrap max-w-[1215px] m-auto">
         {loading ? (
           <div className="col-span-full text-center text-gray-700">
             Carregando...
@@ -341,7 +361,7 @@ export default function App() {
           produtosFiltrados.map((produto) => (
             <div
               key={produto.id}
-              className="bg-white max-w-[300px] lg:w-[430px] min-h-[455px] justify-between p-4 rounded-2xl flex flex-col gap-3 shadow-md border border-gray-200 m-auto"
+              className="bg-white w-[270px] min-h-[455px] justify-between p-4 rounded-2xl flex flex-col gap-3 shadow-md border border-gray-200 m-auto"
             >
               <div className="w-full h-[180px] bg-[#eda865] rounded-lg flex items-center justify-center">
                 {produto.imagem ? (
@@ -411,12 +431,29 @@ export default function App() {
               rows={3}
             />
             <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setForm((prev) => ({ ...prev, imagem: reader.result }));
+                  };
+                  reader.readAsDataURL(file); // converte para Base64
+                }
+              }}
+              className="w-full border p-2 rounded mb-2"
+            />
+
+            {/* <input
               name="imagem"
               placeholder="URL da Imagem"
               value={form.imagem}
               onChange={handleChange}
               className="w-full border p-2 rounded mb-2"
-            />
+            /> */}
+
             <select
               name="categoria"
               value={form.categoria}
