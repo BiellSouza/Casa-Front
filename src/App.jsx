@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
+import { Menu, Plus, ChevronDown } from "lucide-react";
 
 const categorias = [
   "Limpeza",
@@ -9,9 +10,15 @@ const categorias = [
   "Gabriel",
 ];
 
-export default function ProdutoManagerElegant() {
+export default function App() {
   const [produtos, setProdutos] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Navbar/Sidebar state
+  const [openSidebar, setOpenSidebar] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
+
+  // Modal states
   const [modalAberto, setModalAberto] = useState(false);
   const [modalModo, setModalModo] = useState("adicionar");
   const [produtoAtual, setProdutoAtual] = useState(null);
@@ -21,13 +28,25 @@ export default function ProdutoManagerElegant() {
     imagem: "",
     categoria: categorias[0],
   });
+
   const [filtro, setFiltro] = useState("Todos");
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
   const [modalVisualizarAberto, setModalVisualizarAberto] = useState(false);
   const [produtoVisualizar, setProdutoVisualizar] = useState(null);
 
-  const dropdownRef = useRef(null);
+  // ---------------- Lógica Navbar ----------------
+  const open = () => {
+    setShowSidebar(true);
+    setTimeout(() => setOpenSidebar(true), 10);
+  };
+  const close = () => {
+    setOpenSidebar(false);
+    setTimeout(() => setShowSidebar(false), 300);
+  };
 
+  // ---------------- Carregar produtos ----------------
   const carregarProdutos = async () => {
     setLoading(true);
     try {
@@ -44,6 +63,7 @@ export default function ProdutoManagerElegant() {
     carregarProdutos();
   }, []);
 
+  // ---------------- Dropdown click outside ----------------
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -51,19 +71,13 @@ export default function ProdutoManagerElegant() {
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // ---------------- Modais ----------------
   const abrirModalAdicionar = () => {
     setModalModo("adicionar");
-    setForm({
-      nome: "",
-      descricao: "",
-      imagem: "",
-      categoria: categorias[0],
-    });
+    setForm({ nome: "", descricao: "", imagem: "", categoria: categorias[0] });
     setModalAberto(true);
   };
 
@@ -94,7 +108,6 @@ export default function ProdutoManagerElegant() {
       alert("Nome é obrigatório");
       return;
     }
-
     try {
       if (modalModo === "adicionar") {
         await axios.post("https://casa-back-1.onrender.com/produtos", form);
@@ -118,14 +131,7 @@ export default function ProdutoManagerElegant() {
       await axios.delete(
         `https://casa-back-1.onrender.com/produtos/${produto.id}`
       );
-      alert(
-        `Produto excluído:\n\n` +
-          `ID: ${produto.id}\n` +
-          `Nome: ${produto.nome}\n` +
-          `Descrição: ${produto.descricao || "N/A"}\n` +
-          `Categoria: ${produto.categoria || "N/A"}\n` +
-          `Criado em: ${new Date(produto.criadoEm).toLocaleString()}`
-      );
+      alert(`Produto excluído: ${produto.nome}.`);
       carregarProdutos();
     } catch (err) {
       alert("Erro ao excluir produto");
@@ -143,86 +149,209 @@ export default function ProdutoManagerElegant() {
     setProdutoVisualizar(null);
   };
 
-  const produtosFiltrados =
-    filtro === "Todos"
-      ? produtos
-      : produtos.filter(
-          (p) =>
-            p.categoria && p.categoria.toLowerCase() === filtro.toLowerCase()
-        );
+  // ---------------- Produtos filtrados ----------------
+  const [searchTerm, setSearchTerm] = useState("");
 
+  // Filtragem combinada por categoria e search
+  const produtosFiltrados = produtos
+    .filter((p) =>
+      filtro === "Todos"
+        ? true
+        : p.categoria?.toLowerCase() === filtro.toLowerCase()
+    )
+    .filter((p) => p.nome.toLowerCase().includes(searchTerm.toLowerCase()));
   return (
-    <div className="bg-black min-h-screen">
-      <header className="bg-gradient-to-r from-red-800 via-red-900 to-red-800 text-white p-6 sticky top-0 z-50 shadow-md flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-extrabold tracking-wide flex-grow">
-          Produtos para nossa casa
-        </h1>
+    <div className="bg-[#E59866] min-h-screen p-6">
+      {/* ---------------- Navbar ---------------- */}
+      <div className="w-full h-16 bg-secundary justify-between flex items-center px-4 rounded-[6px] mb-[36px] max-w-[1215px] m-auto bg-white/50">
+        {/* Logo */}
+        <h1 className="text-[26px] text-white">Nosso Sistema</h1>
 
-        <div className="flex gap-3 flex-wrap">
-          <button
-            onClick={abrirModalAdicionar}
-            className="px-6 py-2 bg-black hover:bg-gray-700 rounded-lg shadow-lg font-semibold transition"
-          >
-            + Novo Produto
-          </button>
-
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setMostrarDropdown((v) => !v)}
-              className="px-6 py-2 bg-black hover:bg-gray-700 rounded-lg shadow font-semibold transition flex items-center gap-1"
-            >
-              Filtrar: {filtro}
+        {/* Desktop */}
+        <div className="hidden lg:flex gap-2 items-center">
+          <div className="flex min-w-[600px] justify-evenly items-center">
+            {/* Search */}
+            <div className="relative w-[170px]">
+              <input
+                type="text"
+                placeholder="Pesquisar por nome ou marca..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-full p-2 pr-10 pl-3 text-black outline-none border-2 border-primary"
+              />
               <svg
-                className={`w-4 h-4 transition-transform ${
-                  mostrarDropdown ? "rotate-180" : "rotate-0"
-                }`}
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 9l-7 7-7-7"
-                ></path>
+                <path d="m21 21-4.34-4.34" />
+                <circle cx="11" cy="11" r="8" />
               </svg>
-            </button>
+            </div>
 
-            {mostrarDropdown && (
-              <ul className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg text-black font-semibold z-50">
-                <li
-                  className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
-                  onClick={() => {
-                    setFiltro("Todos");
-                    setMostrarDropdown(false);
-                  }}
+            {/* Botões */}
+            <div className="flex gap-6">
+              <button
+                onClick={abrirModalAdicionar}
+                className="bg-primary p-2 px-3 border-2 border-white text-white rounded-full flex w-[160px] justify-evenly items-center"
+              >
+                Novo Produto <Plus size={20} />
+              </button>
+
+              <div className="relative w-[175px]">
+                <button
+                  onClick={() => setMostrarDropdown((v) => !v)}
+                  className="bg-primary p-2 px-3 border-2 border-white text-white rounded-full flex justify-between items-center w-full"
                 >
-                  Todos
-                </li>
-                {categorias.map((cat) => (
-                  <li
-                    key={cat}
-                    className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
-                    onClick={() => {
-                      setFiltro(cat);
-                      setMostrarDropdown(false);
-                    }}
-                  >
-                    {cat}
-                  </li>
-                ))}
-              </ul>
-            )}
+                  Filtrar Categoria <ChevronDown size={20} />
+                </button>
+                {mostrarDropdown && (
+                  <ul className="absolute right-0 mt-2 w-full bg-white rounded-md shadow-lg text-black font-semibold z-50">
+                    <li
+                      className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                      onClick={() => setFiltro("Todos")}
+                    >
+                      Todos
+                    </li>
+                    {categorias.map((cat) => (
+                      <li
+                        key={cat}
+                        className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                        onClick={() => setFiltro(cat)}
+                      >
+                        {cat}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </header>
 
-      <main className="p-6 max-w-7xl mx-auto grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {/* Avatar */}
+          <img
+            src="https://i.pinimg.com/736x/b1/b3/8d/b1b38d3a6d168fb170365e9106be9c9f.jpg"
+            alt="imagem do usuário"
+            className="w-10 h-10 rounded-full"
+          />
+        </div>
+
+        {/* Mobile Menu */}
+        <button onClick={open} className="lg:hidden p-2 rounded-md text-white ">
+          <Menu size={28} />
+        </button>
+
+        {/* Sidebar Mobile */}
+        {showSidebar && (
+          <div
+            className={`fixed inset-0 z-50 flex bg-black/50 transition-opacity duration-300 ${
+              openSidebar ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <aside
+              className={`bg-white w-[250px] h-full p-6 flex flex-col justify-between transform transition-transform duration-300 ${
+                openSidebar ? "translate-x-0" : "-translate-x-full"
+              }`}
+            >
+              <div className="flex flex-col gap-4">
+                <button
+                  onClick={close}
+                  className="self-end text-gray-600 hover:text-primary"
+                >
+                  ✕
+                </button>
+
+                <img
+                  src="https://i.pinimg.com/736x/b1/b3/8d/b1b38d3a6d168fb170365e9106be9c9f.jpg"
+                  alt="imagem do usuário"
+                  className="w-32 h-32 mx-auto border-2 border-primary rounded-full mt-4"
+                />
+              </div>
+
+              <div className="flex flex-col gap-6">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Pesquisar por nome ou marca..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full rounded-full p-2 pr-10 pl-3 text-black outline-none border-2 border-primary"
+                  />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-search absolute right-3 top-1/2 -translate-y-1/2 text-black/30 pointer-events-none"
+                  >
+                    <path d="m21 21-4.34-4.34" />
+                    <circle cx="11" cy="11" r="8" />
+                  </svg>
+                </div>
+
+                <button
+                  onClick={abrirModalAdicionar}
+                  className="bg-primary p-2 px-3 text-white rounded-full flex justify-between items-center"
+                >
+                  Novo Produto <Plus size={20} />
+                </button>
+
+                <button
+                  onClick={() => setMostrarDropdown((v) => !v)}
+                  className="bg-primary p-2 px-3 border-2 border-white text-white rounded-full flex justify-between items-center w-full"
+                >
+                  Filtrar Categoria <ChevronDown size={20} />
+                </button>
+
+                {mostrarDropdown && (
+                  <ul className="flex flex-col mt-2 w-full bg-white rounded-md shadow-lg text-black font-semibold z-50">
+                    <li
+                      className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                      onClick={() => setFiltro("Todos")}
+                    >
+                      Todos
+                    </li>
+                    {categorias.map((cat) => (
+                      <li
+                        key={cat}
+                        className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                        onClick={() => setFiltro(cat)}
+                      >
+                        {cat}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <p className="text-black/30 mt-4 text-center">
+                <i>
+                  11/08/2024 <br />
+                  "Tu te tornas eternamente responsável por aquilo que cativas"
+                </i>
+              </p>
+            </aside>
+          </div>
+        )}
+      </div>
+
+      {/* ---------------- Main Grid ---------------- */}
+      <main className="flex gap-4 flex-wrap max-w-[1215px] m-auto">
         {loading ? (
-          <div className="col-span-full text-center text-gray-600">
-            Carregando produtos...
+          <div className="col-span-full text-center text-gray-700">
+            Carregando...
           </div>
         ) : produtosFiltrados.length === 0 ? (
           <div className="col-span-full text-center text-gray-500">
@@ -232,143 +361,126 @@ export default function ProdutoManagerElegant() {
           produtosFiltrados.map((produto) => (
             <div
               key={produto.id}
-              className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col"
+              className="bg-white w-[270px] min-h-[455px] justify-between p-4 rounded-2xl flex flex-col gap-3 shadow-md border border-gray-200 m-auto"
             >
-              <div className="h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
+              <div className="w-full h-[180px] bg-[#eda865] rounded-lg flex items-center justify-center">
                 {produto.imagem ? (
                   <img
                     src={produto.imagem}
                     alt={produto.nome}
-                    className="object-cover w-full h-full transition-transform duration-300 hover:scale-105"
-                    loading="lazy"
+                    className="object-cover w-full h-full rounded-lg"
                   />
                 ) : (
-                  <div className="text-gray-400 text-lg italic">Sem imagem</div>
+                  <span className="text-gray-400 italic">Sem imagem</span>
                 )}
               </div>
-              <div className="p-4 flex flex-col flex-grow">
-                <h2
-                  className="text-xl font-bold mb-1 truncate"
-                  title={produto.nome}
+              <h2 className="text-[18px] font-bold">{produto.nome}</h2>
+              <p className="text-gray-600">
+                {produto.descricao || "Sem descrição"}
+              </p>
+              <p className="text-purple-600">
+                {produto.categoria || "Sem categoria"}
+              </p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => abrirModalEditar(produto)}
+                  className="flex-grow bg-green-600 hover:bg-green-700 text-white rounded-md py-2"
                 >
-                  {produto.nome}
-                </h2>
-                <p className="text-gray-600 flex-grow mb-2 break-words">
-                  {produto.descricao || "Sem descrição"}
-                </p>
-                <p className="text-sm font-semibold uppercase text-indigo-600 mb-2">
-                  {produto.categoria || "Sem categoria"}
-                </p>
-                <p className="text-xs text-gray-400 mb-4">
-                  Criado em: {new Date(produto.criadoEm).toLocaleDateString()}
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => abrirModalEditar(produto)}
-                    className="flex-grow bg-indigo-600 hover:bg-indigo-700 text-white rounded-md py-2 font-semibold transition"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => excluirProduto(produto)}
-                    className="flex-grow bg-red-600 hover:bg-red-700 text-white rounded-md py-2 font-semibold transition"
-                  >
-                    Excluir
-                  </button>
-                  <button
-                    onClick={() => abrirModalVisualizar(produto)}
-                    className="flex-grow bg-gray-700 hover:bg-gray-800 text-white rounded-md py-2 font-semibold transition"
-                  >
-                    Visualizar
-                  </button>
-                </div>
+                  Editar
+                </button>
+                <button
+                  onClick={() => excluirProduto(produto)}
+                  className="flex-grow bg-red-600 hover:bg-red-700 text-white rounded-md py-2"
+                >
+                  Excluir
+                </button>
+                <button
+                  onClick={() => abrirModalVisualizar(produto)}
+                  className="flex-grow bg-[#eda865] hover:bg-[#e39346] text-white rounded-md py-2"
+                >
+                  Visualizar
+                </button>
               </div>
             </div>
           ))
         )}
       </main>
 
-      {/* Modal Adicionar/Editar */}
+      {/* ---------------- Modais ---------------- */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6 relative shadow-xl">
             <h2 className="text-2xl font-bold mb-4">
               {modalModo === "adicionar"
                 ? "Adicionar Produto"
                 : "Editar Produto"}
             </h2>
+            <input
+              name="nome"
+              placeholder="Nome"
+              value={form.nome}
+              onChange={handleChange}
+              className="w-full border p-2 rounded mb-2"
+            />
+            <textarea
+              name="descricao"
+              placeholder="Descrição"
+              value={form.descricao}
+              onChange={handleChange}
+              className="w-full border p-2 rounded mb-2"
+              rows={3}
+            />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setForm((prev) => ({ ...prev, imagem: reader.result }));
+                  };
+                  reader.readAsDataURL(file); // converte para Base64
+                }
+              }}
+              className="w-full border p-2 rounded mb-2"
+            />
 
-            <label className="block mb-2 font-semibold">
-              Nome<span className="text-red-500">*</span>
-              <input
-                type="text"
-                name="nome"
-                value={form.nome}
-                onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Nome do produto"
-              />
-            </label>
+            {/* <input
+              name="imagem"
+              placeholder="URL da Imagem"
+              value={form.imagem}
+              onChange={handleChange}
+              className="w-full border p-2 rounded mb-2"
+            /> */}
 
-            <label className="block mb-2 font-semibold">
-              Descrição
-              <textarea
-                name="descricao"
-                value={form.descricao}
-                onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Descrição do produto"
-                rows={3}
-              />
-            </label>
-
-            <label className="block mb-2 font-semibold">
-              URL da Imagem
-              <input
-                type="url"
-                name="imagem"
-                value={form.imagem}
-                onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="https://exemplo.com/imagem.jpg"
-              />
-            </label>
-
-            <label className="block mb-4 font-semibold">
-              Categoria
-              <select
-                name="categoria"
-                value={form.categoria}
-                onChange={handleChange}
-                className="mt-1 w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {categorias.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="flex justify-end gap-3">
+            <select
+              name="categoria"
+              value={form.categoria}
+              onChange={handleChange}
+              className="w-full border p-2 rounded mb-4"
+            >
+              {categorias.map((cat) => (
+                <option key={cat}>{cat}</option>
+              ))}
+            </select>
+            <div className="flex justify-end gap-2">
               <button
                 onClick={fecharModal}
-                className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100 transition"
+                className="px-4 py-2 border rounded"
               >
                 Cancelar
               </button>
               <button
                 onClick={salvarProduto}
-                className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
+                className="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
               >
                 {modalModo === "adicionar" ? "Adicionar" : "Salvar"}
               </button>
             </div>
-
             <button
               onClick={fecharModal}
-              aria-label="Fechar modal"
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl font-bold"
+              className="absolute top-3 right-3 text-2xl font-bold"
             >
               &times;
             </button>
@@ -376,14 +488,12 @@ export default function ProdutoManagerElegant() {
         </div>
       )}
 
-      {/* Modal Visualizar Produto */}
       {modalVisualizarAberto && produtoVisualizar && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 overflow-auto">
           <div className="bg-white rounded-lg max-w-lg w-full p-6 relative shadow-xl max-h-full overflow-auto">
             <h2 className="text-2xl font-bold mb-4">
               {produtoVisualizar.nome}
             </h2>
-
             {produtoVisualizar.imagem ? (
               <img
                 src={produtoVisualizar.imagem}
@@ -391,30 +501,25 @@ export default function ProdutoManagerElegant() {
                 className="w-full max-h-96 object-contain mb-4 rounded"
               />
             ) : (
-              <div className="text-gray-400 text-center mb-4 italic">
+              <div className="text-gray-400 text-center italic mb-4">
                 Sem imagem disponível
               </div>
             )}
-
-            <p className="mb-2">
+            <p>
               <span className="font-semibold">Descrição: </span>
               {produtoVisualizar.descricao || "Sem descrição"}
             </p>
-
-            <p className="mb-2">
+            <p>
               <span className="font-semibold">Categoria: </span>
               {produtoVisualizar.categoria || "Sem categoria"}
             </p>
-
-            <p className="mb-2 text-sm text-gray-500">
+            <p className="text-sm text-gray-500">
               Criado em:{" "}
               {new Date(produtoVisualizar.criadoEm).toLocaleDateString()}
             </p>
-
             <button
               onClick={fecharModalVisualizar}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-3xl font-bold"
-              aria-label="Fechar visualização"
+              className="absolute top-3 right-3 text-3xl font-bold"
             >
               &times;
             </button>
