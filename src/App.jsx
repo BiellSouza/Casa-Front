@@ -464,7 +464,7 @@ export default function App() {
                 <option key={cat}>{cat}</option>
               ))}
             </select>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-between sm:justify-end gap-2 w-full ">
               <button
                 onClick={fecharModal}
                 className="px-4 py-2 border rounded"
